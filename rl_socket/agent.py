@@ -1,35 +1,39 @@
 """Camera module"""
 import numpy as np
+import cv2
 
 
 class Agent:
     """Main camera class"""
-    # Пока подразумевается, что в camera_params хранятся все параметры камеры
-    # Можно разбить на несколько отдельных полей
-    def __init__(self, camera_params: tuple, target_points: np.ndarray) -> None:
+
+    def __init__(self,
+                 rvec: np.ndarray,
+                 tvec: np.ndarray,
+                 camera_mat: np.ndarray,
+                 dist_coeffs: np.ndarray,
+                 target_points: np.ndarray) -> None:
         """
-        init method
-        :param camera_params: tuple of camara's parameters (inculding init position)
-        :param target_points: target points located on camera surface
+        init method.
+        :param rvec: init rotation vector.
+        :param tvec: init translation vector.
+        :param camera_mat: intrinsic matrix.
+        :param dist_coeffs: distortion coefficients.
+        :param target_points: target points located on camera surface.
         """
 
-        # TODO что там со внутренними параметрами камеры
-        # как их передавать и хранить
-        if camera_params[-1] is not None:
-            self.camera_coords = camera_params[-1]
-        else:
-            self.camera_coords = np.zeros(3, dtype=np.int32)
-
+        self.rvec = rvec
+        self.tvec = tvec
+        self.camera_mat = camera_mat
+        self.dist_coeffs = dist_coeffs
         self.target_points = target_points
 
     def get_target_points(self) -> np.ndarray:
         """
-        Getter for target_points
-        :return: target points
+        Getter for target_points.
+        :return: target points.
         """
         return self.target_points
 
-    # TODO реализовать проекцию точек в пронстранстве на плоскость камеры
     def project_points(self, points_env: np.ndarray) -> np.ndarray:
         """
         method for projecting points in the 3d area into camera
@@ -37,11 +41,17 @@ class Agent:
         :return: projected points
         
         """
-        raise NotImplementedError
+        return cv2.projectPoints(points_env,
+                                 self.rvec,
+                                 self.tvec,
+                                 self.camera_mat,
+                                 self.dist_coeffs)
 
+    # TODO Разобраться с дельтой для движения камеры
+    # нужно менять tvec и rvec, а не глобальные координаты
     def move(self, delta: np.ndarray) -> None:
         """
         adds delta to current camera coordinates
-        :param delta: delts coords [x1, x3, x3]
+        :param delta: delts coords [x1, x2, x3]
         """
         self.camera_coords += delta
