@@ -1,6 +1,7 @@
 """Camera module"""
 import numpy as np
 import cv2
+from camera import Camera
 
 
 class Agent:
@@ -9,23 +10,22 @@ class Agent:
     def __init__(self,
                  t_coords: np.ndarray,
                  r_coords: np.ndarray,
-                 camera_mat: np.ndarray,
-                 dist_coeffs: np.ndarray,
-                 target_points: np.ndarray) -> None:
+                 camera: Camera,
+                 target_points
+                 ) -> None:
         """
         init method.
         :param t_coords: 3x1 global coords vector.
-        :param rvec: 3x1 global angles vector.
-        :param camera_mat: intrinsic matrix.
-        :param dist_coeffs: distortion coefficients.
+        :param r_coords: 3x1 global angles vector.
+        :param camera: Camera instance to get camera params
         :param target_points: target points located on camera surface.
         """
 
         self.tvec = t_coords
         self.angles = r_coords
         self.rvec = self._compute_rvec()
-        self.camera_mat = camera_mat
-        self.dist_coeffs = dist_coeffs
+        self.camera_mat = camera.camera_mat
+        self.dist_coeffs = camera.dist_coeffs
         self.target_points = target_points
 
 
@@ -49,25 +49,13 @@ class Agent:
         return cv2.Rodrigues(rotation_matrix)[0]
 
 
+    # remove?
     def get_target_points(self) -> np.ndarray:
         """
         Getter for target_points.
         :return: target points.
         """
         return self.target_points
-
-    def project_points(self, points_env: np.ndarray) -> np.ndarray:
-        """
-        method for projecting points in the 3d area into camera
-        :param points_env: points in the enviroment ((x1, x2, x3), ...)
-        :return: projected points
-        
-        """
-        return cv2.projectPoints(points_env,
-                                 self.rvec,
-                                 self.tvec,
-                                 self.camera_mat,
-                                 self.dist_coeffs)[0]
 
 
     def move(self, delta: np.ndarray) -> None:
