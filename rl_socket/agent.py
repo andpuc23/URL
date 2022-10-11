@@ -1,35 +1,61 @@
 """Camera module"""
 import numpy as np
+import cv2
 
 
 class Agent:
     """Main camera class"""
-    # Пока подразумевается, что в camera_params хранятся все параметры камеры
-    # Можно разбить на несколько отдельных полей
-    def __init__(self, camera_params: tuple, target_points: np.ndarray) -> None:
+
+    def __init__(self,
+                 t_coords: np.ndarray,
+                 r_coords: np.ndarray,
+                 camera_mat: np.ndarray,
+                 dist_coeffs: np.ndarray,
+                 target_points: np.ndarray) -> None:
         """
-        init method
-        :param camera_params: tuple of camara's parameters (inculding init position)
-        :param target_points: target points located on camera surface
+        init method.
+        :param t_coords: 3x1 global coords vector.
+        :param rvec: 3x1 global angles vector.
+        :param camera_mat: intrinsic matrix.
+        :param dist_coeffs: distortion coefficients.
+        :param target_points: target points located on camera surface.
         """
 
-        # TODO что там со внутренними параметрами камеры
-        # как их передавать и хранить
-        if camera_params[-1] is not None:
-            self.camera_coords = camera_params[-1]
-        else:
-            self.camera_coords = np.zeros(3, dtype=np.int32)
-
+        self.tvec = t_coords
+        self.angles = r_coords
+        self.rvec = self._compute_rvec()
+        self.camera_mat = camera_mat
+        self.dist_coeffs = dist_coeffs
         self.target_points = target_points
+
+
+    def _compute_rvec(self):
+        first = np.array([
+            [np.cos(self.angles[0]), -np.sin(self.angles[0]), 0],
+            [np.sin(self.angles[0]), np.cos(self.angles[0]), 0],
+            [0, 0, 1]
+        ])
+        second = np.array([
+            [1, 0, 0],
+            [0, np.cos(self.angles[1]), -np.sin(self.angles[1])],
+            [0, np.sin(self.angles[1]), np.cos(self.angles[1])]
+        ])
+        third = np.array([
+            [np.cos(self.angles[2]), 0, np.sin(self.angles[2])],
+            [0, 1, 0],
+            [-np.sin(self.angles[2]), 0, np.cos(self.angles[2])]
+        ])
+        rotation_matrix = first @ second @ third
+        return cv2.Rodrigues(rotation_matrix)[0]
+
 
     def get_target_points(self) -> np.ndarray:
         """
-        Getter for target_points
-        :return: target points
+        Getter for target_points.
+        :return: target points.
         """
         return self.target_points
 
-    # TODO реализовать проекцию точек в пронстранстве на плоскость камеры
     def project_points(self, points_env: np.ndarray) -> np.ndarray:
         """
         method for projecting points in the 3d area into camera
@@ -37,11 +63,18 @@ class Agent:
         :return: projected points
         
         """
-        raise NotImplementedError
+        return cv2.projectPoints(points_env,
+                                 self.rvec,
+                                 self.tvec,
+                                 self.camera_mat,
+                                 self.dist_coeffs)[0]
+
 
     def move(self, delta: np.ndarray) -> None:
         """
         adds delta to current camera coordinates
-        :param delta: delts coords [x1, x3, x3]
+        :param delta: delts coords [x1, x2, x3]
         """
-        self.camera_coords += delta
+        self.tvec = self.tvec + delta[:3]
+        self.angles = self.angles + delta[3:]
+        self.rvec = self._compute_rvec()
