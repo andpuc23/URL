@@ -7,10 +7,16 @@ from camera import Camera
 class Environment:
     """Environment class"""
 
-    def __init__(self, points_coords: np.ndarray, agent: Agent, camera: Camera) -> None:
+    def __init__(self,
+                 points_coords: np.ndarray,
+                 agent: Agent,
+                 camera: Camera,
+                 episode_length:int,
+                 ) -> None:
         self.points_coords = points_coords
         self.agent = agent
         self.camera = camera
+        self.episode_length = episode_length
 
     def get_observation(self) -> np.ndarray:
         """
@@ -30,11 +36,29 @@ class Environment:
                 self.get_observation() - self.agent.get_target_points(), 2
                 ).sum(1)).sum()
 
+    def play_episode(self) -> None:
+        """
+        resets the environment, performs :episode_length: steps
+        """
+        total_cost = 0.
+        observations = []
+        actions = []
+        costs = []
+        self.agent.set_initial_position()
+        for ep in range(self.episode_length):
+            observation = self.get_observation()
+            self.agent.step(observation)
+            cost = self.running_cost()
+            total_cost += cost
 
-## from our favourite book, the general pipeline
+            observations.append(observation)
+            actions.append(action)
+            costs.append(cost)
+        self.agent.finetune(observations, actions, costs)
 
 
-import gym
+
+
 
 
 if __name__ == "__main__":
