@@ -1,9 +1,61 @@
 """Camera module"""
+from re import M
+from turtle import forward
 import numpy as np
 import cv2
+
+import torch
+from torch import nn
+from torch import norm
+
 from .camera import Camera
 
-IMPLEMENTED = False
+class Scaler(nn.Module):
+
+    def __init__(self, constraint_linear: float = 1.0, 
+                       constraint_angle: float = .5) -> None:
+        super().__init__()
+        self.constraint_linear = constraint_linear
+        self.constraint_angle = constraint_angle
+
+    def forward(self, x):
+        linear = x[:3]
+        angle = x[3:]
+        linear_norm = norm(linear, 2)
+        angle_norm = norm(angle, 2)
+        if linear_norm > self.constraint_linear:
+            linear = (self.constraint_linear - 1e-5) / linear_norm * linear
+        if angle_norm > self.constraint_angle:
+            angle = (self.constraint_angle - 1e-5) / angle_norm * angle
+
+        return torch.cat((linear, angle))
+        
+
+class ActorModel(nn.Module):
+
+    def __init__(self, in_channels: int,
+                       out_channels: int,
+                       hidden_size: int,
+                       activation: nn.Module = nn.LeakyReLU(),
+                       use_batch_norm: bool = False,
+                       dropout: float = .0) -> None:
+        super().__init__()
+        self.linear_part = nn.Sequential(
+            nn.Linear(in_channels, hidden_size),
+            activation,
+            nn.Linear(hidden_size, hidden_size),
+            activation,
+            nn.Linear(hidden_size, out_channels)
+        )
+        self.out = nn.Softmax()
+        self.scale = Scaler()
+
+    def forward(self, x):
+        x = self.linear_part(x)
+        return self.scale(self.out(x)) 
+
+
+IMPLEMENTED = True
 class Agent:
     """Main camera class"""
 
@@ -82,15 +134,15 @@ class Agent:
 
     def step(self, observation: np.ndarray) -> np.ndarray:
         if IMPLEMENTED:
-            action = self.model.predict(observation)
+            action = self.model(observation)
         else:
             action = np.random.uniform(-1, 1, 6) # placeholder
         self._move(action)
         return action
 
-    def finetune(self, observations:list, actions:list, rewards:list):
-        #todo
+    def finetune(self, observations: list, actions: list, rewards: list):
+        #TODO
         """
         trains the agent's model on one episode (a data batch)
         """
-        pass
+        
