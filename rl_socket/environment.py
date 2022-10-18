@@ -1,7 +1,7 @@
 """Environments' file"""
 import numpy as np
-from agent import Agent
-from camera import Camera
+from .agent import Agent
+from .camera import Camera
 
 
 class Environment:
