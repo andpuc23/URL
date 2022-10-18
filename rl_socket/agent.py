@@ -1,7 +1,7 @@
 """Camera module"""
 import numpy as np
 import cv2
-from camera import Camera
+from .camera import Camera
 
 IMPLEMENTED = False
 class Agent:
