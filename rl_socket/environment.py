@@ -1,5 +1,7 @@
 """Environments' file"""
 import numpy as np
+from scipy.stats import norm
+
 from .agent import Agent
 from .camera import Camera
 
@@ -11,12 +13,16 @@ class Environment:
                  points_coords: np.ndarray,
                  agent: Agent,
                  camera: Camera,
-                 episode_length:int,
+                 episode_length: int,
+                 reward_multiplier: float,
+                 reward_scale: float
                  ) -> None:
         self.points_coords = points_coords
         self.agent = agent
         self.camera = camera
         self.episode_length = episode_length
+        self.reward_multiplier = reward_multiplier
+        self.reward_scale = reward_scale
 
     def get_observation(self) -> np.ndarray:
         """
@@ -25,16 +31,14 @@ class Environment:
         """
         return self.camera.project_points(self.points_coords)
 
-    def running_cost(self) -> float:
-        """
-        returns sum of distances from true points to target values
-        
-        :return: float distance
-        """
-        return np.sqrt(
-            np.power(
-                self.get_observation() - self.agent.get_target_points(), 2
-                ).sum(1)).sum()
+    def running_reward(self) -> float:
+        distance_coeff = np.sqrt(
+                            np.power(
+                                self.get_observation() - self.agent.get_target_points(), 2
+                                ).sum(1)).sum()
+        reward = norm.pdf(distance_coeff, scale=self.reward_scale) * self.reward_multiplier
+        return reward
+
 
     def play_episode(self) -> None:
         """
