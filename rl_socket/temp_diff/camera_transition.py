@@ -28,31 +28,39 @@ class CameraTransition(nn.Module):
                         points_env: np.ndarray,
                         tvec: np.ndarray,
                         rvec: np.ndarray) -> np.ndarray:
-        return cv2.projectPoints(points_env,
+        projected = []
+        for point in points_env:
+            print('point in _project_points',point, 'shape', point.reshape(-1,3).shape)
+            projected.append(cv2.projectPoints(point.reshape(1,3).astype(np.float64),
                                  rvec,
                                  tvec,
                                  self.camera_mat,
-                                 self.dist_coeffs)[0]
+                                 self.dist_coeffs)[0])
+            
+        return np.array(projected)
 
 
     def _compute_rvec(self, angles: np.ndarray):
-        first = np.array([
-            [np.cos(angles[0]), -np.sin(angles[0]), 0],
-            [np.sin(angles[0]), np.cos(angles[0]), 0],
-            [0, 0, 1]
-        ])
-        second = np.array([
-            [1, 0, 0],
-            [0, np.cos(angles[1]), -np.sin(angles[1])],
-            [0, np.sin(angles[1]), np.cos(angles[1])]
-        ])
-        third = np.array([
-            [np.cos(angles[2]), 0, np.sin(angles[2])],
-            [0, 1, 0],
-            [-np.sin(angles[2]), 0, np.cos(angles[2])]
-        ])
-        rotation_matrix = first @ second @ third
-        return cv2.Rodrigues(rotation_matrix)[0]
+        rmats = []
+        for angles_ in angles:
+            first = np.array([
+                [np.cos(angles_[0]), -np.sin(angles_[0]), 0],
+                [np.sin(angles_[0]), np.cos(angles_[0]), 0],
+                [0, 0, 1]
+            ], dtype=np.float32)
+            second = np.array([
+                [1, 0, 0],
+                [0, np.cos(angles_[1]), -np.sin(angles_[1])],
+                [0, np.sin(angles_[1]), np.cos(angles_[1])]
+            ], dtype=np.float32)
+            third = np.array([
+                [np.cos(angles_[2]), 0, np.sin(angles_[2])],
+                [0, 1, 0],
+                [-np.sin(angles_[2]), 0, np.cos(angles_[2])]
+            ], dtype=np.float32)
+            rotation_matrix = first @ second @ third
+        rmats.append(cv2.Rodrigues(rotation_matrix)[0])
+        return np.array(rmats)
 
 
     def forward(self,

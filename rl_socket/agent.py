@@ -10,6 +10,7 @@ from torch import norm
 
 from .camera import Camera
 
+
 class Scaler(nn.Module):
 
     def __init__(self, constraint_linear: float = 1.0, 
@@ -56,6 +57,7 @@ class ActorModel(nn.Module):
 
 
 IMPLEMENTED = True
+
 class Agent:
     """Main camera class"""
 

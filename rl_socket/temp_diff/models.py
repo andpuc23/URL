@@ -1,7 +1,5 @@
 from typing import Iterator
 
-import numpy as np
-
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
@@ -109,8 +107,9 @@ class CriticTD(nn.Module):
         value = self.critic(state)
         return self.loss(value, td_target)
 
-    def parameters(self) -> Iterator[Parameter]:
+    def parameters(self, not_used_param: bool = False) -> Iterator[Parameter]:
         return self.critic.parameters()
+
 
 class ActorImprovedValue(nn.Module):
 
@@ -130,5 +129,5 @@ class ActorImprovedValue(nn.Module):
         improved_value = reward + self.satellite_discount * self.critic(next_state)
         return -improved_value.mean()
 
-    def parameters(self) -> Iterator[Parameter]:
-        return self.actor.parameters
+    def parameters(self, not_used_param: bool = False) -> Iterator[Parameter]:
+        return self.actor.parameters()
