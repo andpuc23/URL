@@ -9,8 +9,8 @@ from camera_transition import CameraTransition
 
 class Scale(nn.Module):
 
-    def __init__(self, constraint_linear: float = 1.,
-                       constraint_angle: float = .5) -> None:
+    def __init__(self, constraint_linear: float,
+                       constraint_angle: float) -> None:
         super().__init__()
         self.constraint_linear = constraint_linear
         self.constraint_angle = constraint_angle
@@ -41,7 +41,9 @@ class Head(nn.Module):
 
 class ActorModel(nn.Module):
 
-    def __init__(self, actor_layer_size: int = 160) -> None:
+    def __init__(self, actor_layer_size: int = 160, 
+                       constraints_linear: float = 1.,
+                       constraints_angle: float =.5) -> None:
         super().__init__()
         self.actor = nn.Sequential(
             torch.nn.Linear(6, actor_layer_size),
@@ -55,8 +57,8 @@ class ActorModel(nn.Module):
             torch.nn.Linear(actor_layer_size, actor_layer_size),
             torch.nn.LeakyReLU(),
             torch.nn.Linear(actor_layer_size, 6),
-            Head(),
-            Scale()
+            # Head(),
+            Scale(constraints_linear, constraints_angle)
         )
 
     def forward(self, x):
@@ -65,10 +67,11 @@ class ActorModel(nn.Module):
 
 class CriticModel(nn.Module):
 
-    def __init__(self, critic_layer_size: int = 70) -> None:
+    def __init__(self, critic_layer_size: int = 70,
+                       scale_factor: int = -50000) -> None:
         super().__init__()
         self.critic = torch.nn.Sequential(
-            torch.nn.Linear(4, critic_layer_size),
+            torch.nn.Linear(6, critic_layer_size),
             torch.nn.LeakyReLU(),
             torch.nn.Linear(critic_layer_size, critic_layer_size),
             torch.nn.LeakyReLU(),
@@ -78,12 +81,17 @@ class CriticModel(nn.Module):
             torch.nn.LeakyReLU(),
             torch.nn.Linear(critic_layer_size, critic_layer_size),
             torch.nn.LeakyReLU(),
-            torch.nn.Linear(critic_layer_size, 1),
-            torch.nn.Tanh()
+            torch.nn.Linear(critic_layer_size, 1)
         )
+        self.act = torch.nn.Tanh()
+        self.scale_factor = scale_factor
 
     def forward(self, x):
-        return self.critic(x)
+        x = self.critic(x)
+        # print(x)
+        x = self.act(x)
+        print(x)
+        return x * self.scale_factor
 
 
 class CriticTD(nn.Module):
@@ -103,11 +111,12 @@ class CriticTD(nn.Module):
         with torch.no_grad():
             action = self.actor(state)
             next_state, reward = self.transition(state, action)
+            # print(self.critic(next_state))
             td_target = reward + self.satellite_discount * self.critic(next_state)
         value = self.critic(state)
         return self.loss(value, td_target)
 
-    def parameters(self, not_used_param: bool = False) -> Iterator[Parameter]:
+    def parameters(self) -> Iterator[Parameter]:
         return self.critic.parameters()
 
 
@@ -129,5 +138,5 @@ class ActorImprovedValue(nn.Module):
         improved_value = reward + self.satellite_discount * self.critic(next_state)
         return -improved_value.mean()
 
-    def parameters(self, not_used_param: bool = False) -> Iterator[Parameter]:
+    def parameters(self) -> Iterator[Parameter]:
         return self.actor.parameters()
