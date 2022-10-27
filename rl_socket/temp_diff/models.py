@@ -28,57 +28,47 @@ class Scale(nn.Module):
         return torch.cat((linear, angle))
 
 
-class Head(nn.Module):
-    
-    def __init__(self) -> None:
-        super().__init__()
-
-    def forward(self, input):
-        norm = torch.matmul(input.reshape(input.shape[0], 1, input.shape[1]),
-                            input.reshape(input.shape[0], input.shape[1], 1)).squeeze(1) ** 0.5
-        return input * (torch.nn.functional.tanh(norm) / norm)
-
-
 class ActorModel(nn.Module):
 
-    def __init__(self, actor_layer_size: int = 160, 
+    def __init__(self, actor_layer_size: int = 100, 
                        constraints_linear: float = 1.,
-                       constraints_angle: float =.5) -> None:
+                       constraints_angle: float = .5) -> None:
         super().__init__()
         self.actor = nn.Sequential(
             torch.nn.Linear(6, actor_layer_size),
             torch.nn.LeakyReLU(),
             torch.nn.Linear(actor_layer_size, actor_layer_size),
             torch.nn.LeakyReLU(),
-            torch.nn.Linear(actor_layer_size, actor_layer_size),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(actor_layer_size, actor_layer_size),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(actor_layer_size, actor_layer_size),
-            torch.nn.LeakyReLU(),
+            # torch.nn.Linear(actor_layer_size, actor_layer_size),
+            # torch.nn.LeakyReLU(),
+            # torch.nn.Linear(actor_layer_size, actor_layer_size),
+            # torch.nn.LeakyReLU(),
+            # torch.nn.Linear(actor_layer_size, actor_layer_size),
+            # torch.nn.LeakyReLU(),
             torch.nn.Linear(actor_layer_size, 6),
-            # Head(),
             Scale(constraints_linear, constraints_angle)
         )
 
     def forward(self, x):
-        return self.actor(x)
+        x = self.actor(x)
+        x[:, 3:5] = 0
+        return x
 
 
 class CriticModel(nn.Module):
 
     def __init__(self, critic_layer_size: int = 70,
-                       scale_factor: int = -50000) -> None:
+                       scale_factor: int = -5000) -> None:
         super().__init__()
         self.critic = torch.nn.Sequential(
             torch.nn.Linear(6, critic_layer_size),
             torch.nn.LeakyReLU(),
-            torch.nn.Linear(critic_layer_size, critic_layer_size),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(critic_layer_size, critic_layer_size),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(critic_layer_size, critic_layer_size),
-            torch.nn.LeakyReLU(),
+            # torch.nn.Linear(critic_layer_size, critic_layer_size),
+            # torch.nn.LeakyReLU(),
+            # torch.nn.Linear(critic_layer_size, critic_layer_size),
+            # torch.nn.LeakyReLU(),
+            # torch.nn.Linear(critic_layer_size, critic_layer_size),
+            # torch.nn.LeakyReLU(),
             torch.nn.Linear(critic_layer_size, critic_layer_size),
             torch.nn.LeakyReLU(),
             torch.nn.Linear(critic_layer_size, 1)
@@ -89,8 +79,9 @@ class CriticModel(nn.Module):
     def forward(self, x):
         x = self.critic(x)
         # print(x)
+        x = -(x ** 2)
         x = self.act(x)
-        print(x)
+        # print(x)
         return x * self.scale_factor
 
 

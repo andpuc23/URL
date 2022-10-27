@@ -1,4 +1,3 @@
-from timeit import repeat
 from typing import Optional
 
 import torch
@@ -105,4 +104,5 @@ class CameraTransition(nn.Module):
 
         state = state + action
         reward = self._calculate_reward(self._project_points(state))
+        # print(reward)
         return state, -reward
