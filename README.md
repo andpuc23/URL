@@ -27,3 +27,7 @@ matplotlib==3.5.3
 | Petr Sokerin | [petrsokerin](https://www.github.com/petrsokerin)  | [petrsokerin](t.me/petrsokerin) | project manager |
 | Andrey Puchkov | you are here, but [still](https://www.github.com/andpuc23) | [snipercapt](t.me/snipercapt) | mathematician|
 | Nikita Belousov | [nokiroki](https://www.github.com/nokiroki) | [nokiroki1](t.me/nokiroki1) | implementer |
+
+
+### Project presentation
+[Google.Drive link](https://docs.google.com/presentation/d/1-syFEiSdq753Tp182NRJFxDqdaC6vYLn/edit?usp=sharing&ouid=107167356583930004446&rtpof=true&sd=true)
